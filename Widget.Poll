@@ -19,4 +19,4 @@ $(function () {
   $('.pollquestion', $pt).each(function(index) { $(this).replaceWith('<td><input type="radio" name="<!--{$poll|escape:'html'}-->" id="<!--{$poll|escape:'html'}-->_' + index + '"/><label for="<!--{$poll|escape:'html'}-->_' + index + '">' + $(this).html() + '</label></td>'); });
   $.getScript(wgServer + '/extensions/WEPoll/wepoll.js');
 });
-</script></noinclude>
+</script></includeonly>
