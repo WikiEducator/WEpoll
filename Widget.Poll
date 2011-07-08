@@ -1,0 +1,22 @@
+<noinclude>Infrastructure for wiki-based poll[[Category:CC-BY]]</noinclude><includeonly>
+<!--{counter name="WEpoID" assign ="WEpoID"}--><div id="WEpodiv<!--{$WEpoID|escape:'html'}-->">
+</div>
+<script type="text/javascript">
+$(function () {
+  $('head').append('<style>'
+      + 'table.wePoll { border-style: solid; border-width: 1px;'
+      + 'border-color: #AAAAAA; padding: 1ex; background-color: #F6F9ED; }'
+      + 'td.pollbar { width: 120px; text-align: right; }'
+      + 'td.pollcount, td.pollpercent, td.polltotal { width: 30px; text-align: right; }'
+      + 'td.polltotallabel { width: 120px; text-align: right; }'
+      + '</style>');
+  $pt = $("#<!--{$poll|escape:'html'}-->").wrap('<form></form>');
+  if (wgUserName) {
+    $pt.parent('form').append('<input type="submit" onclick="return false;" value="                        " style="display:hidden;" />');
+  } else {
+    $pt.parent('form').append('<a href="/Special:UserLogin">You must be logged in to vote</a>');
+  }
+  $('.pollquestion', $pt).each(function(index) { $(this).replaceWith('<td><input type="radio" name="<!--{$poll|escape:'html'}-->" id="<!--{$poll|escape:'html'}-->_' + index + '"/><label for="<!--{$poll|escape:'html'}-->_' + index + '">' + $(this).html() + '</label></td>'); });
+  $.getScript(wgServer + '/extensions/WEPoll/wepoll.js');
+});
+</script></noinclude>

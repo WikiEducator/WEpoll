@@ -1,0 +1,10 @@
+CREATE TABLE wepoll (
+	po_id VARCHAR(40) NOT NULL,
+	po_q INT(5) UNSIGNED NOT NULL,
+	po_user_id INT(5) UNSIGNED NOT NULL,
+	po_vote INT(5) DEFAULT NULL,
+	po_timestamp CHAR(14) NOT NULL DEFAULT '',
+	PRIMARY KEY(po_id, po_q, po_user_id)
+) /*$wgDBTableOptions*/;
+
+CREATE INDEX idx_po_id ON wepoll (po_id);
