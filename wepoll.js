@@ -2,7 +2,7 @@
  * wepoll.js
  * Copyright 2011 Open Education Resource Foundation
  * @author James Tittsler <jim@tittsler.com>
- * @license MIT
+ * @license BSD
  */
 
 /** includes crypto-js SHA1 library
@@ -81,7 +81,7 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
   }
 
   var questions = $('#poll1').text();
-  var pollid = Crypto.SHA1(questions);
+  var pollid = Crypto.SHA1(questions.replace(/\s/g,''));
   $.ajax({
     url: weAPI,
     data: {
