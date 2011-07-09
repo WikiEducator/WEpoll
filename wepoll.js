@@ -1,7 +1,7 @@
 /**
  * wepoll.js
  * Copyright 2011 Open Education Resource Foundation
- * @author James Tittsler <jim@tittsler.com>
+ * @author James Tittsler <jim@OERfoundation.org>
  * @license BSD
  */
 
@@ -20,18 +20,24 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
 
 (function () {
   var weAPI = wgServer + '/api.php';
+  var polls = [];
 
   function dovote() {
-    $('#poll1').parent().find('input[type=submit]').unbind('click').attr('val', '          ');
-    var vote = $('#poll1').find('input[type=radio]:checked').attr('id');
+    var sub = $(this).attr('id');
+    var pix = sub.split('_')[1];
+    console.log('sub', sub, 'pix', pix);
+    $('#' + sub).unbind('click').attr('val', '          ');
+    var vote = $('#wePoll_' + pix).find('input[type=radio]:checked').attr('id');
+    console.log('vote', vote);
     if (vote) {
-      vote = parseInt(vote.substring(vote.indexOf('_')+1));
+      vote = vote.split('_')[2];
+      console.log('vote', vote, 'pix', pix, 'poll', polls[pix]);
       $.ajax({
         url: weAPI,
         data: {
           action: 'wepoll',
           format: 'json',
-          poll: pollid,
+          poll: polls[pix],
           povote: vote
         },
         async: true,
@@ -45,10 +51,12 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
   }
 
   function showvotes(data) {
-    var i;
+    var i, pid, pix;
     var votescounted = 0;
     var thispoll = data && data.poll && data.poll.wepoll;
-    if (thispoll) {
+    console.log('thispoll', thispoll);
+    if (thispoll && (pid = thispoll.poll) && ((pix = $.inArray(pid, polls)) >= 0)) {
+      console.log('showing votes for pid=' + pid + ' pix=' + pix);
       var uservote = thispoll.uservote;
       var votes = thispoll.votes;
       for (i in votes) {
@@ -56,7 +64,7 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
       }
       var votesbasis = (votescounted === 0) ? 1 : votescounted;
 
-      $('tr', '#poll1').each(function(index) {
+      $('tr', '#wePoll_'+pix).each(function(index) {
         var idx = index - 1;
         if (idx >= 0) {
           tv = (idx in votes) ? votes[idx] : 0;
@@ -67,35 +75,62 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
         }
       });
 
-      $b = $('#poll1').parent().find('input[type=submit]');
+      $b = $('#wePoll_'+pix).find('input[type=submit]');
       if (uservote !== '') {
         $b.attr('value', 'Change my vote');
-        $('#poll1_' + uservote).attr('checked', 'checked');
+        $('#wePoll_' + pix + '_' + uservote).attr('checked', 'checked');
       } else {
         $b.attr('value', '     Vote     ');
       }
       $b.show().click(dovote);
-      $('#polltotallabel', '#poll1').text('Votes:');
-      $('.polltotal', '#poll1').text(votescounted);
+      $('#polltotallabel', '#wePoll_' + pix).text('Votes:');
+      $('.polltotal', '#wePoll_' + pix).text(votescounted);
     }
   }
 
-  var questions = $('#poll1').text();
-  var pollid = Crypto.SHA1(questions.replace(/\s/g,''));
-  $.ajax({
-    url: weAPI,
-    data: {
-      action: 'wepoll',
-      format: 'json',
-      poll: pollid
-    },
-    async: true,
-    type: 'POST',
-    dataType: 'json',
-    success: showvotes,
-    failure: function() {
-      alert('unable to retrieve poll results');
+  function setupPoll($p) {
+    var pid = Crypto.SHA1($p.text().replace(/\s/g, ''));
+    var pix = polls.length;
+    polls.push(pid);
+    console.log('setupPoll pid=' + pid + ' pix=' + pix);
+    $p.wrap('<form id="wePoll_' + pix + '"></form>');
+    var $pform = $p.parent();
+    if (wgUserName) {
+      $pform.append('<input type="submit" onclick="return false;" value="                        " style="display:hidden;" id="wePollsub_' + pix +'"/>');
+    } else {
+      $pform.append('<a href="/Special:UserLogin">You must be logged in to vote</a>');
     }
-  }); 
+    $('.pollquestion', $p).each(function(index) { $(this).replaceWith('<td><input type="radio" name="wePoll_' + pix +'" id="wePoll_' + pix + '_' + index + '"/><label for="wePoll_' + pix + '_' + index + '">' + $(this).html() + '</label></td>'); });
+
+    pix++;
+    $.ajax({
+      url: weAPI,
+      data: {
+        action: 'wepoll',
+        format: 'json',
+        poll: pid
+      },
+      async: true,
+      type: 'POST',
+      dataType: 'json',
+      success: showvotes,
+      failure: function() {
+        alert('unable to retrieve poll results');
+      }
+    });
+  }
+
+  console.log('wePoll!');
+  $('head').append(['<style>',
+      'table.wePoll { border-style: solid; border-width: 1px;',
+      'border-color: #AAAAAA; padding: 1ex; background-color: #F6F9ED; }',
+      'td.pollbar { width: 120px; text-align: right; }',
+      'td.pollcount, td.pollpercent, td.polltotal { width: 30px; text-align: right; }',
+      'td.polltotallabel { width: 120px; text-align: right; }',
+      'ul.wePoll { margin-left: 150px; }',
+      '.wePollvotes { position: relative; left: -100px; }',
+      '</style>'].join(''));
+  // for all the polls on the page
+  $('div.wePoll').each(function(i) { setupPoll($(this)); });
 })();
 
