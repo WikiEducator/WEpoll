@@ -25,20 +25,21 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
   function dovote() {
     var sub = $(this).attr('id');
     var pix = sub.split('_')[1];
-    console.log('sub', sub, 'pix', pix);
-    $('#' + sub).unbind('click').attr('val', '          ');
-    var vote = $('#wePoll_' + pix).find('input[type=radio]:checked').attr('id');
-    console.log('vote', vote);
-    if (vote) {
-      vote = vote.split('_')[2];
-      console.log('vote', vote, 'pix', pix, 'poll', polls[pix]);
+    $('#' + sub).unbind('click').attr('disabled', true).attr('val', '          ');
+    var votes = '';
+    $('input[id^=wePoll_' + pix + ']:checked').each(function(i) {
+      var idp = $(this).attr('id').split('_');
+      if (votes.length) { votes += '|'; }
+      votes += idp[2] + ':' + idp[3];
+    });
+    if (votes) {
       $.ajax({
         url: weAPI,
         data: {
           action: 'wepoll',
           format: 'json',
           poll: polls[pix],
-          povote: vote
+          povote: votes
         },
         async: true,
         type: 'POST',
@@ -54,13 +55,13 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
     var i, pid, pix;
     var votescounted = 0;
     var thispoll = data && data.poll && data.poll.wepoll;
-    console.log('thispoll', thispoll);
     if (thispoll && (pid = thispoll.poll) && ((pix = $.inArray(pid, polls)) >= 0)) {
-      console.log('showing votes for pid=' + pid + ' pix=' + pix);
+      $('div.wePollcount', $('#wePoll_' + pix)).text('0');
       var uservote = thispoll.uservote;
       var votes = thispoll.votes;
-      for (i in votes) {
-        votescounted += parseInt(votes[i]);
+      for (i=0; i<votes.length; ++i) {
+        votescounted += parseInt(votes[i],10);
+        $('#wePoll_' + pix + '_' + parseInt(votes[i][0],10) + '_' + parseInt(votes[i][1],10) + 'c').text(parseInt(votes[i][2],10));
       }
       var votesbasis = (votescounted === 0) ? 1 : votescounted;
 
@@ -76,23 +77,24 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
       });
 
       $b = $('#wePoll_'+pix).find('input[type=submit]');
-      if (uservote !== '') {
+      if (uservote.length) {
         $b.attr('value', 'Change my vote');
-        $('#wePoll_' + pix + '_' + uservote).attr('checked', 'checked');
+        for (i=0; i<uservote.length; i++) {
+          $('#wePoll_' + pix + '_' + parseInt(uservote[i][0],10) + '_' + parseInt(uservote[i][1],10)).attr('checked', 'checked');
+        }
       } else {
         $b.attr('value', '     Vote     ');
       }
-      $b.show().click(dovote);
+      $b.show().click(dovote).attr('disabled', false);
       $('#polltotallabel', '#wePoll_' + pix).text('Votes:');
       $('.polltotal', '#wePoll_' + pix).text(votescounted);
     }
   }
 
   function setupPoll($p) {
-    var pid = Crypto.SHA1($p.text().replace(/\s/g, ''));
+    var pid = Crypto.SHA1($p.html().replace(/\s/g, ''));
     var pix = polls.length;
     polls.push(pid);
-    console.log('setupPoll pid=' + pid + ' pix=' + pix);
     $p.wrap('<form id="wePoll_' + pix + '"></form>');
     var $pform = $p.parent();
     if (wgUserName) {
@@ -100,7 +102,16 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
     } else {
       $pform.append('<a href="/Special:UserLogin">You must be logged in to vote</a>');
     }
-    $('.pollquestion', $p).each(function(index) { $(this).replaceWith('<td><input type="radio" name="wePoll_' + pix +'" id="wePoll_' + pix + '_' + index + '"/><label for="wePoll_' + pix + '_' + index + '">' + $(this).html() + '</label></td>'); });
+    $p.children('ol,ul').each( function(i) {
+      var qid = 'wePoll_' + pix;
+      $(this).children('li').each( function(j) {
+        var qid = 'wePoll_' + pix + '_' + j;
+        $(this).find('li').each( function(k) {
+          var rid = qid + '_' + k;
+          $(this).replaceWith('<li class="wePollre"><div class="wePollc"><div class="wePollbar" id="' + rid + 'b"></div><div class="wePollcount" id="' + rid + 'c"></div></div><input type="radio" name="' + qid + '" id="' + rid + '"/><label for="' + rid + '">' + $(this).html() + '</label></li>');
+        });
+      });
+    });
 
     pix++;
     $.ajax({
@@ -120,15 +131,18 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
     });
   }
 
-  console.log('wePoll!');
   $('head').append(['<style>',
       'table.wePoll { border-style: solid; border-width: 1px;',
       'border-color: #AAAAAA; padding: 1ex; background-color: #F6F9ED; }',
       'td.pollbar { width: 120px; text-align: right; }',
       'td.pollcount, td.pollpercent, td.polltotal { width: 30px; text-align: right; }',
       'td.polltotallabel { width: 120px; text-align: right; }',
-      'ul.wePoll { margin-left: 150px; }',
-      '.wePollvotes { position: relative; left: -100px; }',
+      '.wePoll>ol { margin-left: 180px; }',
+      '.wePoll>ol>li>ol { list-style-type: none; list-style-image: none; list-style-position: inside;}',
+      '.wePoll>ol>li>ul { list-style-type: none; list-style-image: none; list-style-position: inside;}',
+      '.wePollc { position: relative; left: -180px; width: 120px; display: inline; }',
+      '.wePollbar { width: 120px; display: inline; }',
+      '.wePollcount { width: 50px; display: inline; }',
       '</style>'].join(''));
   // for all the polls on the page
   $('div.wePoll').each(function(i) { setupPoll($(this)); });

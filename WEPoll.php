@@ -13,7 +13,7 @@ if( !defined( 'MEDIAWIKI' ) ) {
 
 $wgExtensionCredits['parserhook'][] = array(
 	'name'           => 'WEPoll',
-	'version'        => '0.1',
+	'version'        => '0.2',
 	'url'            => 'http://WikiEducator.org/Extension:WEPoll',
 	'author'         => '[http://WikiEducator.org/User:JimTittsler Jim Tittsler]',
         'description'    => 'add API calls for a simple Javascript poll',
@@ -50,15 +50,20 @@ class APIWEPoll extends ApiQueryBase {
 			// make sure the poll exists
 			// record this user's vote
 			$dbr = $this->GetDB();
-			$res = $dbr->replace(
-				'wepoll',     // $table
-				array('po_id', 'po_user_id'),
-				array('po_id' => $params['ll'],
-					'po_user_id' => $user,
-					'po_vote' => $params['vote'],
-					'po_timestamp' => wfTimestampNow()
-				),      // rows
-				__METHOD__);
+			$votes = explode('|', $params['vote']);
+			foreach ($votes as $vote) {
+				$q = explode(':', $vote);
+				$res = $dbr->replace(
+					'wepoll',     // $table
+					array('po_id', 'po_q', 'po_user_id'),
+					array('po_id' => $params['ll'],
+						'po_q' => $q[0],
+						'po_user_id' => $user,
+						'po_vote' => $q[1],
+						'po_timestamp' => wfTimestampNow()
+					),      // rows
+					__METHOD__);
+			}
 			//error_log("vote on {$params['ll']} by $user of {$params['vote']}");
 		}
 		
@@ -67,27 +72,27 @@ class APIWEPoll extends ApiQueryBase {
 
 		$this->addTables('wepoll');
 		$this->addFields('po_id');
+		$this->addFields('po_q');
 		$this->addFields('po_vote');
 		$this->addFields('count(*) AS po_count');
 
 		$this->addWhereFld('po_id', $params['ll']);
-		$this->addOption('GROUP BY', 'po_vote');
-
+		$this->addOption('GROUP BY', 'po_q,po_vote');
+		$this->addOption('ORDER BY', 'po_q,po_vote');
 		$res = $this->select(__METHOD__);
 
 		$votes = array();
 		foreach ( $res as $row ) {
-			$vote = is_null($row->po_vote) ? -1 : $row->po_vote;
-			$votes[$vote] = $row->po_count;
+			$votes[] = array($row->po_q, $row->po_vote, $row->po_count);
 		}
 		$data['poll'] = $params['ll'];
 		$data['votes'] = $votes;
 
 		$this->addWhereFld('po_user_id', $user);
 		$res = $this->select(__METHOD__);
-		$uservote = '';
+		$uservote = array();
 		foreach ( $res as $row ) {
-			$uservote = $row->po_vote;
+			$uservote[] = array($row->po_q, $row->po_vote);
 		}
 		$data['uservote'] = $uservote;
 		$result->setIndexedTagName($data, 'poll');
@@ -101,16 +106,14 @@ class APIWEPoll extends ApiQueryBase {
 	public function getAllowedParams() {
 		return array (
 			'll' => null,
-			'vote' => array(
-				ApiBase :: PARAM_TYPE => 'integer'
-			)
+			'vote' => null
 		);
 	}
 
 	public function getParamDescription() {
 		return array (
 			'll' => 'SHA1 hash of poll question',
-			'vote' => "integer index of user's vote"
+			'vote' => "pairs of question:vote separated by '|'"
 		);
 	}
 
@@ -120,7 +123,7 @@ class APIWEPoll extends ApiQueryBase {
 
 	protected function getExamples() {
 		return array (
-			'api.php?action=wepoll&poll=1234ab&povote=1',
+			'api.php?action=wepoll&poll=1234ab&povote=0:1|1:2',
 			'api.php?action=wepoll&poll=1234ab'
 		);
 	}

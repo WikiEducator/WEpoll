@@ -1,4 +1,4 @@
-CREATE TABLE wepoll (
+CREATE TABLE mw_wepoll (
 	po_id VARCHAR(40) NOT NULL,
 	po_q INT(5) UNSIGNED NOT NULL,
 	po_user_id INT(5) UNSIGNED NOT NULL,
@@ -7,4 +7,4 @@ CREATE TABLE wepoll (
 	PRIMARY KEY(po_id, po_q, po_user_id)
 ) /*$wgDBTableOptions*/;
 
-CREATE INDEX idx_po_id ON wepoll (po_id);
+CREATE INDEX mwidx_po_id ON mw_wepoll (po_id);
