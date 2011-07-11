@@ -1,5 +1,23 @@
-<noinclude>Infrastructure for wiki-based poll[[Category:CC-BY]]</noinclude><includeonly>
-<script type="text/javascript">/* <![CDATA[ */
+<noinclude>Infrastructure for wiki-based poll
+== Usage==
+<nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=xxxx}}</nowiki>
+
+== options ==
+
+Options is a comma separated list of options defining the poll that immediately follows the widget:
+
+;voters
+:show number of users that answered this question
+;count
+:show absolute count for each response
+;percent
+:show percentage for each response
+
+('''N.B.''' Only one of '''count''' and '''percent''' can be used for a particular poll instance.)
+
+[[Category:CC-BY]]</noinclude><includeonly>
+<!--{counter name="WEpoID" assign ="WEpoID"}--><spam id="WEpomk<!--{$WEpoID|escape:'html'}-->"></span><script type="text/javascript">/* <![CDATA[ */
 $(function() {
-$('head').append('<script type="text/javascript" src="' + wgServer + '/extensions/WEPoll/wepoll.js"></sc' + 'ript>');});
+if (typeof WEPoll == 'undefined') {$('head').append('<script type="text/javascript" src="' + wgServer + '/extensions/WEPoll/wepoll.js"></sc' + 'ript>');}
+WEPoll("WEpomk<!--{$WEpoID|escape:'html'}-->","<!--{$options|escape:'html'}-->");});
 /* ]]> */</script></includeonly>

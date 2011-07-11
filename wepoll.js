@@ -18,16 +18,24 @@ d%32;return c},wordsToBytes:function(a){for(var c=[],b=0;b<a.length*32;b+=8)c.pu
 (function(){var i=Crypto,l=i.util,m=i.charenc,a=m.UTF8,c=m.Binary,b=i.SHA1=function(d,e){var g=l.wordsToBytes(b._sha1(d));return e&&e.asBytes?g:e&&e.asString?c.bytesToString(g):l.bytesToHex(g)};b._sha1=function(d){if(d.constructor==String)d=a.stringToBytes(d);var e=l.bytesToWords(d),g=d.length*8;d=[];var n=1732584193,h=-271733879,j=-1732584194,k=271733878,o=-1009589776;e[g>>5]|=128<<24-g%32;e[(g+64>>>9<<4)+15]=g;for(g=0;g<e.length;g+=16){for(var q=n,r=h,s=j,t=k,u=o,f=0;f<80;f++){if(f<16)d[f]=e[g+
 f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(d[f]>>>0)+(f<20?(h&j|~h&k)+1518500249:f<40?(h^j^k)+1859775393:f<60?(h&j|h&k|j&k)-1894007588:(h^j^k)-899497514);o=k;k=j;j=h<<30|h>>>2;h=n;n=p}n+=q;h+=r;j+=s;k+=t;o+=u}return[n,h,j,k,o]};b._blocksize=16;b._digestsize=20})();
 
-(function () {
+function WEPoll(marker, ops) {
+  var options = {};
+  var op = ops.replace(/\s/g, '').toLowerCase().split(',');
+  for (var i=0; i<op.length; ++i) {
+    options[op[i]] = true;
+  }
+
   var weAPI = wgServer + '/api.php';
-  var polls = [];
+  if (typeof this.polls == "undefined") {
+    this.polls = [];
+  }
 
   function dovote() {
     var sub = $(this).attr('id');
     var pix = sub.split('_')[1];
     $('#' + sub).unbind('click').attr('disabled', true).attr('val', '          ');
     var votes = '';
-    $('input[id^=wePoll_' + pix + ']:checked').each(function(i) {
+    $('input[id^=WEPoll_' + pix + ']:checked').each(function(i) {
       var idp = $(this).attr('id').split('_');
       if (votes.length) { votes += '|'; }
       votes += idp[2] + ':' + idp[3];
@@ -52,42 +60,73 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
   }
 
   function showvotes(data) {
-    var i, pid, pix;
-    var votescounted = 0;
+    var i, v, pid, pix;
+    var vi, vr, vc, basis;
+    var votescounted = [];
     var thispoll = data && data.poll && data.poll.wepoll;
     if (thispoll && (pid = thispoll.poll) && ((pix = $.inArray(pid, polls)) >= 0)) {
-      $('div.wePollcount', $('#wePoll_' + pix)).text('0');
+      if ('count' in options) {
+        $('div.WEPollcount', $('#WEPoll_' + pix)).text('0');
+      } else if ('percent' in options) {
+        $('div.WEPollcount', $('#WEPoll_' + pix)).text('0%');
+      }
+      if ('voters' in options) {
+        $('div.WEPollvoters', $('#WEPoll_' + pix)).text('0 voters');
+      }
       var uservote = thispoll.uservote;
       var votes = thispoll.votes;
+      // votes are tuples (question, response, count)
       for (i=0; i<votes.length; ++i) {
-        votescounted += parseInt(votes[i],10);
-        $('#wePoll_' + pix + '_' + parseInt(votes[i][0],10) + '_' + parseInt(votes[i][1],10) + 'c').text(parseInt(votes[i][2],10));
+        vi = parseInt(votes[i][0], 10);
+        if (typeof votescounted[vi] == 'undefined') {
+          votescounted[vi] = 0;
+        }
+        votescounted[vi] += parseInt(votes[i][2], 10);
+        vc = votescounted[vi];
+        if ('voters' in options) {
+          $('#WEPoll_' + pix + '_' + vi + 'v').text(vc + ' voter' + ((vc==1) ? '' : 's'));
+        }
       }
-      var votesbasis = (votescounted === 0) ? 1 : votescounted;
+      for (i=0; i<votes.length; ++i) {
+        vi = parseInt(votes[i][0], 10);
+        vr = parseInt(votes[i][1], 10);
+        vc = parseInt(votes[i][2], 10);
+        if ('count' in options) {
+          $('#WEPoll_' + pix + '_' + vi + '_' + vr + 'c').text(vc);
+        }
+        basis = votescounted[vi] || 1;
+        p = Math.round(100*vc/basis);
+        if ('percent' in options) {
+          $('#WEPoll_' + pix + '_' + vi + '_' + vr + 'c').text(p + '%');
+        }
+      }
 
-      $('tr', '#wePoll_'+pix).each(function(index) {
+      /*
+      $('tr', '#WEPoll_'+pix).each(function(index) {
         var idx = index - 1;
         if (idx >= 0) {
           tv = (idx in votes) ? votes[idx] : 0;
-          $('.pollcount', $(this)).text(tv);
-          var p = 100*tv/votesbasis;
+          if ('votes' in options) {
+            $('.pollcount', $(this)).text(tv);
+          } else if ('percent' in options) {
+            var p = 100*tv/votesbasis[idx];
+            $('.pollcount', $(this)).text(Math.round(p) + '%');
+          }
           $('div.pollbar', $(this)).animate({width: p+'px'}, 'fast');
-          $('td.pollpercent', $(this)).text(Math.round(p) + '%');
         }
       });
+      */
 
-      $b = $('#wePoll_'+pix).find('input[type=submit]');
+      $b = $('#WEPollsub_'+pix);
       if (uservote.length) {
         $b.attr('value', 'Change my vote');
         for (i=0; i<uservote.length; i++) {
-          $('#wePoll_' + pix + '_' + parseInt(uservote[i][0],10) + '_' + parseInt(uservote[i][1],10)).attr('checked', 'checked');
+          $('#WEPoll_' + pix + '_' + parseInt(uservote[i][0],10) + '_' + parseInt(uservote[i][1],10)).attr('checked', 'checked');
         }
       } else {
         $b.attr('value', '     Vote     ');
       }
       $b.show().click(dovote).attr('disabled', false);
-      $('#polltotallabel', '#wePoll_' + pix).text('Votes:');
-      $('.polltotal', '#wePoll_' + pix).text(votescounted);
     }
   }
 
@@ -95,21 +134,22 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
     var pid = Crypto.SHA1($p.html().replace(/\s/g, ''));
     var pix = polls.length;
     polls.push(pid);
-    $p.wrap('<form id="wePoll_' + pix + '"></form>');
+    $p.wrap('<form id="WEPoll_' + pix + '" style="background: ' + options + '"></form>');
     var $pform = $p.parent();
     if (wgUserName) {
-      $pform.append('<input type="submit" onclick="return false;" value="                        " style="display:hidden;" id="wePollsub_' + pix +'"/>');
+      $pform.append('<input type="submit" onclick="return false;" value="                        " style="margin-left: 200px; display:hidden;" id="WEPollsub_' + pix +'"/>');
     } else {
       $pform.append('<a href="/Special:UserLogin">You must be logged in to vote</a>');
     }
     $p.children('ol,ul').each( function(i) {
-      var qid = 'wePoll_' + pix;
+      var qid = 'WEPoll_' + pix;
       $(this).children('li').each( function(j) {
-        var qid = 'wePoll_' + pix + '_' + j;
+        var qid = 'WEPoll_' + pix + '_' + j;
         $(this).find('li').each( function(k) {
           var rid = qid + '_' + k;
-          $(this).replaceWith('<li class="wePollre"><div class="wePollc"><div class="wePollbar" id="' + rid + 'b"></div><div class="wePollcount" id="' + rid + 'c"></div></div><input type="radio" name="' + qid + '" id="' + rid + '"/><label for="' + rid + '">' + $(this).html() + '</label></li>');
+          $(this).replaceWith('<li class="WEPollre"><div class="WEPollc"><div class="WEPollbar" id="' + rid + 'b"></div><div class="WEPollcount" id="' + rid + 'c"></div></div><input type="radio" name="' + qid + '" id="' + rid + '"/><label for="' + rid + '">' + $(this).html() + '</label></li>');
         });
+        $(this).replaceWith('<li class="WEPollq"><div class="WEPollqc"><div class="WEPollvoters" id="' + qid + 'v"></div></div>' + $(this).html() + '</li>');
       });
     });
 
@@ -131,20 +171,18 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
     });
   }
 
-  $('head').append(['<style>',
-      'table.wePoll { border-style: solid; border-width: 1px;',
-      'border-color: #AAAAAA; padding: 1ex; background-color: #F6F9ED; }',
-      'td.pollbar { width: 120px; text-align: right; }',
-      'td.pollcount, td.pollpercent, td.polltotal { width: 30px; text-align: right; }',
-      'td.polltotallabel { width: 120px; text-align: right; }',
-      '.wePoll>ol { margin-left: 180px; }',
-      '.wePoll>ol>li>ol { list-style-type: none; list-style-image: none; list-style-position: inside;}',
-      '.wePoll>ol>li>ul { list-style-type: none; list-style-image: none; list-style-position: inside;}',
-      '.wePollc { position: relative; left: -180px; width: 120px; display: inline; }',
-      '.wePollbar { width: 120px; display: inline; }',
-      '.wePollcount { width: 50px; display: inline; }',
-      '</style>'].join(''));
-  // for all the polls on the page
-  $('div.wePoll').each(function(i) { setupPoll($(this)); });
-})();
+  // find the next poll after our marker
+  $('#'+marker).closest('p').nextAll('div.WEPoll:first').each(function(i) { setupPoll($(this)); });
+}
+
+// setup the styles for WEPolls
+$('head').append(['<style>',
+    '.WEPoll>ol { margin-left: 200px; position: relative; }',
+    '.WEPoll>ol>li>ol { list-style-type: none; list-style-image: none; list-style-position: inside;}',
+    '.WEPoll>ol>li>ul { list-style-type: none; list-style-image: none; list-style-position: inside;}',
+    '.WEPollc,.WEPollqc { position: absolute; left: -200px; width: 150px; display: inline; }',
+    '.WEPollbar { width: 120px; display: inline; }',
+    '.WEPollcount { width: 50px; display: inline; position: relative; float: right; text-align: right;}',
+    '.WEPollvoters { width: 80px; font-size: smaller; color: gray; display: inline; position: relative; float: right; text-align: right;}',
+    '</style>'].join(''));
 
