@@ -1,6 +1,6 @@
 <noinclude>Infrastructure for wiki-based poll
 == Usage==
-<code><nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=x,y,z|colors=c1,c2,c3...}}</nowiki></code>
+<code><nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=x,y,z|colors=c1,c2,c3...|disabled=reason}}</nowiki></code>
 
 == options ==
 
@@ -23,14 +23,19 @@
 |-
 |'''bars'''
 |show color bar graph
+|-
+|'''disabled'''
+|do not accept new votes
 |}
 
-;colors
+;bars
 : optional comma separated list of colors that will be used cyclically for barchart colors, over-riding built-in colors  (automatically sets '''bars''' option)
+;disabled
+: optional text string explaining that votes are no longer solicited
 
 [[Category:CC-BY]]</noinclude><includeonly>
 <!--{counter name="WEpoID" assign ="WEpoID"}--><spam id="WEpomk<!--{$WEpoID|escape:'html'}-->"></span><script type="text/javascript">/* <![CDATA[ */
 $(function() {
 if (typeof WEPoll == 'undefined') {$('head').append('<script type="text/javascript" src="' + wgServer + '/extensions/WEPoll/wepoll.js"></sc' + 'ript>');}
-WEPoll("WEpomk<!--{$WEpoID|escape:'html'}-->","<!--{$options|escape:'html'}-->", "<!--{$colors|escape:'html'}-->");});
+WEPoll("WEpomk<!--{$WEpoID|escape:'html'}-->","<!--{$options|escape:'html'}-->", "<!--{$bars|escape:'html'}-->", "<!--{$disabled|escape:'html'}-->");});
 /* ]]> */</script></includeonly>

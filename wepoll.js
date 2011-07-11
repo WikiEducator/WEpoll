@@ -18,20 +18,24 @@ d%32;return c},wordsToBytes:function(a){for(var c=[],b=0;b<a.length*32;b+=8)c.pu
 (function(){var i=Crypto,l=i.util,m=i.charenc,a=m.UTF8,c=m.Binary,b=i.SHA1=function(d,e){var g=l.wordsToBytes(b._sha1(d));return e&&e.asBytes?g:e&&e.asString?c.bytesToString(g):l.bytesToHex(g)};b._sha1=function(d){if(d.constructor==String)d=a.stringToBytes(d);var e=l.bytesToWords(d),g=d.length*8;d=[];var n=1732584193,h=-271733879,j=-1732584194,k=271733878,o=-1009589776;e[g>>5]|=128<<24-g%32;e[(g+64>>>9<<4)+15]=g;for(g=0;g<e.length;g+=16){for(var q=n,r=h,s=j,t=k,u=o,f=0;f<80;f++){if(f<16)d[f]=e[g+
 f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(d[f]>>>0)+(f<20?(h&j|~h&k)+1518500249:f<40?(h^j^k)+1859775393:f<60?(h&j|h&k|j&k)-1894007588:(h^j^k)-899497514);o=k;k=j;j=h<<30|h>>>2;h=n;n=p}n+=q;h+=r;j+=s;k+=t;o+=u}return[n,h,j,k,o]};b._blocksize=16;b._digestsize=20})();
 
-function WEPoll(marker, ops, colors) {
+function WEPoll(marker, ops, bars, disabled) {
+  var i;
   var options = {};
   var barcolors = ['red', 'blue', 'orange', 'green'];
   var op = ops.replace(/\s/g, '').toLowerCase().split(',');
-  for (var i=0; i<op.length; ++i) {
+  for (i=0; i<op.length; ++i) {
     options[op[i]] = true;
   }
-  if (colors) {
-    barcolors = colors.split(',');
+  if (bars) {
+    barcolors = htmlEscape(bars).split(',');
     if (barcolors.length > 0) {
-      options['bars'] = true;
+      options.bars = true;
     } else {
       barcolors = ['white'];
     }
+  }
+  if (disabled) {
+    options.disabled = htmlEscape(disabled);
   }
 
   var weAPI = wgServer + '/api.php';
@@ -39,6 +43,13 @@ function WEPoll(marker, ops, colors) {
   if (typeof this.polls == "undefined") {
     this.polls = [];
     this.responses = [];
+  }
+
+  function htmlEscape(s) {
+    return(s.replace(/&/g,'&amp;').
+        replace(/>/g, '&gt;').
+        replace(/</g, '&lt;').
+        replace(/"/g, '&quot;'));
   }
 
   function dovote() {
@@ -88,9 +99,9 @@ function WEPoll(marker, ops, colors) {
           0       1         1      0        0
       */
       var show = true;
-      if (uservote.length == 0) {
+      if (uservote.length === 0) {
         if ('after' in options) { show = false; }
-        if (('anon' in options) && (wgUserName != null)) { show = false; }
+        if (('anon' in options) && (wgUserName !== null)) { show = false; }
       }
 
       if (show) {
@@ -145,15 +156,22 @@ function WEPoll(marker, ops, colors) {
       }
 
       $b = $('#WEPollsub_'+pix);
-      if (uservote.length) {
-        $b.attr('value', 'Change my vote');
-        for (i=0; i<uservote.length; i++) {
-          $('#WEPoll_' + pix + '_' + parseInt(uservote[i][0],10) + '_' + parseInt(uservote[i][1],10)).attr('checked', 'checked');
+      if ('disabled' in options) {
+        $b.hide().attr('disabled', true);
+        if (typeof options.disabled == "string") {
+          $b.parent().addClass('WEPolldisabled').text(options.disabled);
         }
       } else {
-        $b.attr('value', '     Vote     ');
+        if (uservote.length) {
+          $b.attr('value', 'Change my vote');
+          for (i=0; i<uservote.length; i++) {
+            $('#WEPoll_' + pix + '_' + parseInt(uservote[i][0],10) + '_' + parseInt(uservote[i][1],10)).attr('checked', 'checked');
+          }
+        } else {
+          $b.attr('value', '     Vote     ');
+        }
+        $b.show().click(dovote).attr('disabled', false);
       }
-      $b.show().click(dovote).attr('disabled', false);
     }
   }
 
@@ -165,9 +183,9 @@ function WEPoll(marker, ops, colors) {
     $p.wrap('<form id="WEPoll_' + pix + '" style="background: ' + options + '"></form>');
     var $pform = $p.parent();
     if (wgUserName) {
-      $pform.append('<input type="submit" onclick="return false;" value="                        " style="margin-left: 200px; display:hidden;" id="WEPollsub_' + pix +'"/>');
+      $pform.append('<div class="WEPollbutton"><input type="submit" onclick="return false;" value="                        " style="display:hidden;" id="WEPollsub_' + pix +'"/></div>');
     } else {
-      $pform.append('<a href="/index.php?title=Special:UserLogin&amp;returnto=' + escape(wgPageName) + '">You must be logged in to vote' + (('after' in options) ? ' or see results' : '') + '</a>');
+      $pform.append('<div class="WEPollbutton"><a href="/index.php?title=Special:UserLogin&amp;returnto=' + escape(wgPageName) + '">You must be logged in to vote' + (('after' in options) ? ' or see results' : '') + '</a></div>');
     }
     $p.children('ol,ul').each( function(i) {
       var qid = 'WEPoll_' + pix;
@@ -214,5 +232,7 @@ $('head').append(['<style>',
     '.WEPollbar { display: inline-block; position: relative; float: right; }',
     '.WEPollcount { width: 50px; display: inline; position: relative; float: right; text-align: right;}',
     '.WEPollvoters { width: 80px; font-size: smaller; color: gray; display: inline; position: relative; float: right; text-align: right;}',
+    '.WEPolldisabled { font-size: smaller; color: gray; }',
+    '.WEPollbutton { margin-left: 200px; }',
     '</style>'].join(''));
 
