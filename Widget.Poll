@@ -1,10 +1,11 @@
 <noinclude>Infrastructure for wiki-based poll
 == Usage==
-<code><nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=x,y,z}}</nowiki></code>
+<code><nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=x,y,z|colors=c1,c2,c3...}}</nowiki></code>
 
 == options ==
 
-Options is a comma separated list of options defining the poll that immediately follows the widget:
+;options
+:optional comma separated list of options defining the poll that immediately follows the widget:
 
 {|class="prettytable"
 | '''voters'''
@@ -19,11 +20,17 @@ Options is a comma separated list of options defining the poll that immediately 
 |rowspan="2"|only display results after voting (implies never shown to users that are not logged in, since they can't vote)<br />'''or'''<br/>only to users that have voted and to users that are not logged in
 |-
 |'''anon'''
+|-
+|'''bars'''
+|show color bar graph
 |}
+
+;colors
+: optional comma separated list of colors that will be used cyclically for barchart colors, over-riding built-in colors  (automatically sets '''bars''' option)
 
 [[Category:CC-BY]]</noinclude><includeonly>
 <!--{counter name="WEpoID" assign ="WEpoID"}--><spam id="WEpomk<!--{$WEpoID|escape:'html'}-->"></span><script type="text/javascript">/* <![CDATA[ */
 $(function() {
 if (typeof WEPoll == 'undefined') {$('head').append('<script type="text/javascript" src="' + wgServer + '/extensions/WEPoll/wepoll.js"></sc' + 'ript>');}
-WEPoll("WEpomk<!--{$WEpoID|escape:'html'}-->","<!--{$options|escape:'html'}-->");});
+WEPoll("WEpomk<!--{$WEpoID|escape:'html'}-->","<!--{$options|escape:'html'}-->", "<!--{$colors|escape:'html'}-->");});
 /* ]]> */</script></includeonly>
