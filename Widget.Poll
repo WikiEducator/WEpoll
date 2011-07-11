@@ -1,19 +1,25 @@
 <noinclude>Infrastructure for wiki-based poll
 == Usage==
-<nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=xxxx}}</nowiki>
+<code><nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=x,y,z}}</nowiki></code>
 
 == options ==
 
 Options is a comma separated list of options defining the poll that immediately follows the widget:
 
-;voters
-:show number of users that answered this question
-;count
-:show absolute count for each response
-;percent
-:show percentage for each response
-
-('''N.B.''' Only one of '''count''' and '''percent''' can be used for a particular poll instance.)
+{|class="prettytable"
+| '''voters'''
+| show the number of users that answered this question
+|-
+|'''count'''
+|rowspan="2"| display number<br />'''or'''<br />percentage for each response
+|-
+|'''percent'''
+|-
+|'''after'''
+|rowspan="2"|only display results after voting (implies never shown to users that are not logged in, since they can't vote)<br />'''or'''<br/>only to users that have voted and to users that are not logged in
+|-
+|'''anon'''
+|}
 
 [[Category:CC-BY]]</noinclude><includeonly>
 <!--{counter name="WEpoID" assign ="WEpoID"}--><spam id="WEpomk<!--{$WEpoID|escape:'html'}-->"></span><script type="text/javascript">/* <![CDATA[ */

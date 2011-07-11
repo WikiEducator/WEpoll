@@ -65,57 +65,73 @@ function WEPoll(marker, ops) {
     var votescounted = [];
     var thispoll = data && data.poll && data.poll.wepoll;
     if (thispoll && (pid = thispoll.poll) && ((pix = $.inArray(pid, polls)) >= 0)) {
-      if ('count' in options) {
-        $('div.WEPollcount', $('#WEPoll_' + pix)).text('0');
-      } else if ('percent' in options) {
-        $('div.WEPollcount', $('#WEPoll_' + pix)).text('0%');
-      }
-      if ('voters' in options) {
-        $('div.WEPollvoters', $('#WEPoll_' + pix)).text('0 voters');
-      }
       var uservote = thispoll.uservote;
       var votes = thispoll.votes;
-      // votes are tuples (question, response, count)
-      for (i=0; i<votes.length; ++i) {
-        vi = parseInt(votes[i][0], 10);
-        if (typeof votescounted[vi] == 'undefined') {
-          votescounted[vi] = 0;
-        }
-        votescounted[vi] += parseInt(votes[i][2], 10);
-        vc = votescounted[vi];
-        if ('voters' in options) {
-          $('#WEPoll_' + pix + '_' + vi + 'v').text(vc + ' voter' + ((vc==1) ? '' : 's'));
-        }
-      }
-      for (i=0; i<votes.length; ++i) {
-        vi = parseInt(votes[i][0], 10);
-        vr = parseInt(votes[i][1], 10);
-        vc = parseInt(votes[i][2], 10);
-        if ('count' in options) {
-          $('#WEPoll_' + pix + '_' + vi + '_' + vr + 'c').text(vc);
-        }
-        basis = votescounted[vi] || 1;
-        p = Math.round(100*vc/basis);
-        if ('percent' in options) {
-          $('#WEPoll_' + pix + '_' + vi + '_' + vr + 'c').text(p + '%');
-        }
+
+      /*  voted   loggedin  anon   after    show
+          1       ?         ?      ?        1
+          0       ?         0      0        1
+          0       ?         0      1        0
+          0       0         1      0        1
+          0       1         1      0        0
+      */
+      var show = true;
+      if (uservote.length == 0) {
+        if ('after' in options) { show = false; }
+        if (('anon' in options) && (wgUserName != null)) { show = false; }
       }
 
-      /*
-      $('tr', '#WEPoll_'+pix).each(function(index) {
-        var idx = index - 1;
-        if (idx >= 0) {
-          tv = (idx in votes) ? votes[idx] : 0;
-          if ('votes' in options) {
-            $('.pollcount', $(this)).text(tv);
-          } else if ('percent' in options) {
-            var p = 100*tv/votesbasis[idx];
-            $('.pollcount', $(this)).text(Math.round(p) + '%');
-          }
-          $('div.pollbar', $(this)).animate({width: p+'px'}, 'fast');
+      if (show) {
+        if ('count' in options) {
+          $('div.WEPollcount', $('#WEPoll_' + pix)).text('0');
+        } else if ('percent' in options) {
+          $('div.WEPollcount', $('#WEPoll_' + pix)).text('0%');
         }
-      });
-      */
+        if ('voters' in options) {
+          $('div.WEPollvoters', $('#WEPoll_' + pix)).text('0 voters');
+        }
+        // votes are tuples (question, response, count)
+        for (i=0; i<votes.length; ++i) {
+          vi = parseInt(votes[i][0], 10);
+          if (typeof votescounted[vi] == 'undefined') {
+            votescounted[vi] = 0;
+          }
+          votescounted[vi] += parseInt(votes[i][2], 10);
+          vc = votescounted[vi];
+          if ('voters' in options) {
+            $('#WEPoll_' + pix + '_' + vi + 'v').text(vc + ' voter' + ((vc==1) ? '' : 's'));
+          }
+        }
+        for (i=0; i<votes.length; ++i) {
+          vi = parseInt(votes[i][0], 10);
+          vr = parseInt(votes[i][1], 10);
+          vc = parseInt(votes[i][2], 10);
+          if ('count' in options) {
+            $('#WEPoll_' + pix + '_' + vi + '_' + vr + 'c').text(vc);
+          }
+          basis = votescounted[vi] || 1;
+          p = Math.round(100*vc/basis);
+          if ('percent' in options) {
+            $('#WEPoll_' + pix + '_' + vi + '_' + vr + 'c').text(p + '%');
+          }
+        }
+
+        /*
+        $('tr', '#WEPoll_'+pix).each(function(index) {
+          var idx = index - 1;
+          if (idx >= 0) {
+            tv = (idx in votes) ? votes[idx] : 0;
+            if ('votes' in options) {
+              $('.pollcount', $(this)).text(tv);
+            } else if ('percent' in options) {
+              var p = 100*tv/votesbasis[idx];
+              $('.pollcount', $(this)).text(Math.round(p) + '%');
+            }
+            $('div.pollbar', $(this)).animate({width: p+'px'}, 'fast');
+          }
+        });
+        */
+      }
 
       $b = $('#WEPollsub_'+pix);
       if (uservote.length) {
@@ -139,7 +155,7 @@ function WEPoll(marker, ops) {
     if (wgUserName) {
       $pform.append('<input type="submit" onclick="return false;" value="                        " style="margin-left: 200px; display:hidden;" id="WEPollsub_' + pix +'"/>');
     } else {
-      $pform.append('<a href="/Special:UserLogin">You must be logged in to vote</a>');
+      $pform.append('<a href="/index.php?title=Special:UserLogin&amp;returnto=' + escape(wgPageName) + '">You must be logged in to vote' + (('after' in options) ? ' or see results' : '') + '</a>');
     }
     $p.children('ol,ul').each( function(i) {
       var qid = 'WEPoll_' + pix;
