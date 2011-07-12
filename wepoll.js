@@ -221,18 +221,3 @@ function WEPoll(marker, ops, bars, disabled) {
   // find the next poll after our marker
   $('#'+marker).closest('p').nextAll('div.WEPoll:first').each(function(i) { setupPoll($(this)); });
 }
-
-// setup the styles for WEPolls
-$('head').append(['<style>',
-    '.WEPoll>ol { margin-left: 200px; position: relative; }',
-    '.WEPoll>ol>li>ol { list-style-type: none; list-style-image: none; list-style-position: inside;}',
-    '.WEPoll>ol>li>ul { list-style-type: none; list-style-image: none; list-style-position: inside;}',
-    '.WEPollc,.WEPollqc { position: absolute; left: -200px; width: 160px; display: inline; }',
-    '.WEPollbarc { display: inline-block; width:110px; }',
-    '.WEPollbar { display: inline-block; position: relative; float: right; }',
-    '.WEPollcount { width: 50px; display: inline; position: relative; float: right; text-align: right;}',
-    '.WEPollvoters { width: 80px; font-size: smaller; color: gray; display: inline; position: relative; float: right; text-align: right;}',
-    '.WEPolldisabled { font-size: smaller; color: gray; }',
-    '.WEPollbutton { margin-left: 200px; }',
-    '</style>'].join(''));
-
