@@ -176,7 +176,7 @@ function WEPoll(marker, ops, bars, disabled) {
   }
 
   function setupPoll($p) {
-    var pid = Crypto.SHA1($p.html().replace(/\s/g, ''));
+    var pid = Crypto.SHA1($p.text().replace(/\s/g, ''));
     var pix = polls.length;
     polls.push(pid);
     responses.push([]);
