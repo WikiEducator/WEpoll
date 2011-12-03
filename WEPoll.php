@@ -13,7 +13,7 @@ if( !defined( 'MEDIAWIKI' ) ) {
 
 $wgExtensionCredits['parserhook'][] = array(
 	'name'           => 'WEPoll',
-	'version'        => '0.2',
+	'version'        => '0.3',
 	'url'            => 'http://WikiEducator.org/Extension:WEPoll',
 	'author'         => '[http://WikiEducator.org/User:JimTittsler Jim Tittsler]',
         'description'    => 'add API calls for a simple Javascript poll',
@@ -48,14 +48,20 @@ class APIWEPoll extends ApiQueryBase {
 					'notloggedin');
 			}
 			// make sure the poll exists
+			// remove old votes by this user
+			$dbr = $this->GetDB();
+			$res = $dbr->delete(
+				'wepoll',   // $table
+				array('po_id' => $params['ll'],
+				      'po_user_id' => $user),
+				__METHOD__);
 			// record this user's vote
 			$dbr = $this->GetDB();
 			$votes = explode('|', $params['vote']);
 			foreach ($votes as $vote) {
 				$q = explode(':', $vote);
-				$res = $dbr->replace(
+				$res = $dbr->insert(
 					'wepoll',     // $table
-					array('po_id', 'po_q', 'po_user_id'),
 					array('po_id' => $params['ll'],
 						'po_q' => $q[0],
 						'po_user_id' => $user,

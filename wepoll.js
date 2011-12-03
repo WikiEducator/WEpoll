@@ -23,6 +23,7 @@ function WEPoll(marker, ops, bars, disabled) {
   var options = {};
   var barcolors = ['red', 'blue', 'orange', 'green'];
   var op = ops.replace(/\s/g, '').toLowerCase().split(',');
+
   for (i=0; i<op.length; ++i) {
     options[op[i]] = true;
   }
@@ -191,9 +192,10 @@ function WEPoll(marker, ops, bars, disabled) {
       var qid = 'WEPoll_' + pix;
       $(this).children('li').each( function(j) {
         var qid = 'WEPoll_' + pix + '_' + j;
+        var multi = ($(this).children('ol').length > 0);
         $(this).find('li').each( function(k) {
           var rid = qid + '_' + k;
-          $(this).replaceWith('<li class="WEPollre"><div class="WEPollc"><div class="WEPollbarc"><div class="WEPollbar" id="' + rid + 'b" style="width: 0px; background-color: ' + barcolors[k % barcolors.length] + ';">&nbsp;</div></div><div class="WEPollcount" id="' + rid + 'c"></div></div><input type="radio" name="' + qid + '" id="' + rid + '"/><label for="' + rid + '">' + $(this).html() + '</label></li>');
+          $(this).replaceWith('<li class="WEPollre"><div class="WEPollc"><div class="WEPollbarc"><div class="WEPollbar" id="' + rid + 'b" style="width: 0px; background-color: ' + barcolors[k % barcolors.length] + ';">&nbsp;</div></div><div class="WEPollcount" id="' + rid + 'c"></div></div><input type="' + ((multi) ? 'checkbox' : 'radio') + '" name="' + qid + '" id="' + rid + '"/><label for="' + rid + '">' + $(this).html() + '</label></li>');
           responses[pix][j] = k;
         });
         $(this).replaceWith('<li class="WEPollq"><div class="WEPollqc"><div class="WEPollvoters" id="' + qid + 'v"></div></div>' + $(this).html() + '</li>');

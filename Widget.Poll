@@ -1,6 +1,23 @@
-<noinclude>Infrastructure for wiki-based poll
+<noinclude>Infrastructure for wiki-based poll.  Only votes from logged in users are collected.
 == Usage==
-<code><nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=x,y,z|colors=c1,c2,c3...|disabled=reason}}</nowiki></code>
+<code><nowiki>{{#widget:</nowiki>{{PAGENAME}}<nowiki>|options=x,y,z|bars=c1,c2,c3...|disabled=reason}}</nowiki></code>
+
+The #widget invocation must be '''immediately''' followed by a <nowiki><div class="WEPoll">...</div></nowiki>.
+
+The '''div''' must contain two nested lists.  The outer list can be either ordered ('''#''') or unordered ('''*''').  Within each element of that outer list ''must'' be another list.  Each of those inner lists can be either:
+* unordered - in which case each of its elements will be rendered as a radio button, allowing the user to choose only one of them
+* ordered - in which case each of its elements will be rendered as a checkbox, allowing selection of multiple choices
+
+Example:
+
+ <nowiki><div class="WEPoll">
+# This question will only allow a single response to be chosen
+#* option one
+#* option two
+# This question will allow multiple responses
+## option one
+## option two
+</div></nowiki>
 
 == options ==
 
@@ -40,7 +57,7 @@ if (typeof WEPoll == 'undefined') {
 // setup the styles for WEPolls
 $('head').append(['<style>',
     '.WEPoll>ol { margin-left: 200px; position: relative; }',
-    '.WEPoll>ol>li>ol { list-style-type: none; list-style-image: none; list-style-position: inside;}',
+    '.WEPoll>ol>li>ol { list-style-type: none; list-style-image: none; list-style-position: inside; margin-left: 20px;}',
     '.WEPoll>ol>li>ul { list-style-type: none; list-style-image: none; list-style-position: inside;}',
     '.WEPollc,.WEPollqc { position: absolute; left: -200px; width: 160px; display: inline; }',
     '.WEPollbarc { display: inline-block; width:110px; }',
