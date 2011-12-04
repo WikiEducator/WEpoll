@@ -13,7 +13,7 @@ if( !defined( 'MEDIAWIKI' ) ) {
 
 $wgExtensionCredits['parserhook'][] = array(
 	'name'           => 'WEPoll',
-	'version'        => '0.3',
+	'version'        => '0.4',
 	'url'            => 'http://WikiEducator.org/Extension:WEPoll',
 	'author'         => '[http://WikiEducator.org/User:JimTittsler Jim Tittsler]',
         'description'    => 'add API calls for a simple Javascript poll',
@@ -75,6 +75,7 @@ class APIWEPoll extends ApiQueryBase {
 		
 		$result = $this->getResult();
 		$data = array();
+		$data['poll'] = $params['ll'];
 
 		$this->addTables('wepoll');
 		$this->addFields('po_id');
@@ -91,7 +92,6 @@ class APIWEPoll extends ApiQueryBase {
 		foreach ( $res as $row ) {
 			$votes[] = array($row->po_q, $row->po_vote, $row->po_count);
 		}
-		$data['poll'] = $params['ll'];
 		$data['votes'] = $votes;
 
 		$this->addWhereFld('po_user_id', $user);
@@ -101,6 +101,21 @@ class APIWEPoll extends ApiQueryBase {
 			$uservote[] = array($row->po_q, $row->po_vote);
 		}
 		$data['uservote'] = $uservote;
+
+		$this->resetQueryParams();
+		$this->addTables('wepoll');
+		$this->addFields('po_q');
+		$this->addFields('count(distinct po_user_id) AS voters');
+		$this->addWhereFld('po_id', $params['ll']);
+		$this->addOption('GROUP BY', 'po_q');
+		$this->addOption('ORDER BY', 'po_q');
+		$res = $this->select(__METHOD__);
+		$voters = array();
+		foreach ( $res as $row ) {
+			$voters[] = array($row->po_q, $row->voters);
+		}
+		$data['voters'] = $voters;
+
 		$result->setIndexedTagName($data, 'poll');
 		$result->addValue('poll', $this->getModuleName(), $data);
 	}
