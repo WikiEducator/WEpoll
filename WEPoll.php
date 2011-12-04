@@ -49,18 +49,18 @@ class APIWEPoll extends ApiQueryBase {
 			}
 			// make sure the poll exists
 			// remove old votes by this user
-			$dbr = $this->GetDB();
-			$res = $dbr->delete(
+			$dbw = $this->GetDB( DB_MASTER );
+			$res = $dbw->delete(
 				'wepoll',   // $table
 				array('po_id' => $params['ll'],
 				      'po_user_id' => $user),
 				__METHOD__);
 			// record this user's vote
-			$dbr = $this->GetDB();
+			$dbw = $this->GetDB();
 			$votes = explode('|', $params['vote']);
 			foreach ($votes as $vote) {
 				$q = explode(':', $vote);
-				$res = $dbr->insert(
+				$res = $dbw->insert(
 					'wepoll',     // $table
 					array('po_id' => $params['ll'],
 						'po_q' => $q[0],
