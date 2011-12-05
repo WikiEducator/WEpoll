@@ -84,13 +84,14 @@ function WEPoll(marker, ops, bars, disabled) {
 
   function showvotes(data) {
     var pid, pix, i, q, r;
-    var vc, basis, voters;
+    var vc, basis, qvoters;
     var vqr = [];
     var votescounted = [];
     var thispoll = data && data.poll && data.poll.wepoll;
     if (thispoll && (pid = thispoll.poll) && ((pix = $.inArray(pid, polls)) >= 0)) {
       var uservote = thispoll.uservote;
       var votes = thispoll.votes;
+      var voters = thispoll.voters;
 
       /*  voted   loggedin  anon   after    show
           1       ?         ?      ?        1
@@ -122,13 +123,20 @@ function WEPoll(marker, ops, bars, disabled) {
             vqr[q][r] = 0;
           }
         }
+        for (i=0; i<voters.length; ++i) {
+          q = parseInt(voters[i][0], 10);
+          r = parseInt(voters[i][1], 10);
+          if ((q >= 0) && (r >= 0)) {
+            votescounted[q] = r;
+          }
+        }
+
         // votes are tuples (question, response, count)
         for (i=0; i<votes.length; ++i) {
           q = parseInt(votes[i][0], 10);
           r = parseInt(votes[i][1], 10);
           if ((q >= 0) && (q < thisresponses.length) && (r >= 0) && (r <= thisresponses[q])) {
             vc = parseInt(votes[i][2], 10);
-            votescounted[q] += vc;
             vqr[q][r] = vc;
           }
         }
@@ -150,8 +158,8 @@ function WEPoll(marker, ops, bars, disabled) {
           }
           // show number of voters for each question
           if ('voters' in options) {
-            voters = votescounted[q];
-            $('#WEPoll_' + pix + '_' + q + 'v').text(voters + ' voter' + ((voters==1) ? '' : 's'));
+            qvoters = votescounted[q] || 0;
+            $('#WEPoll_' + pix + '_' + q + 'v').text(qvoters + ' voter' + ((qvoters==1) ? '' : 's'));
           }
         }
       }
