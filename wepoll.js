@@ -21,7 +21,7 @@ f];else{var p=d[f-3]^d[f-8]^d[f-14]^d[f-16];d[f]=p<<1|p>>>31}p=(n<<5|n>>>27)+o+(
 function WEPoll(marker, ops, bars, disabled) {
   var i;
   var options = {};
-  var barcolors = ['red', 'blue', 'orange', 'green'];
+  var barcolors = ['green', 'orange', 'blue', 'red'];
   var op = ops.replace(/\s/g, '').toLowerCase().split(',');
 
   for (i=0; i<op.length; ++i) {
