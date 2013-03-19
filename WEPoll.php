@@ -12,6 +12,7 @@ if( !defined( 'MEDIAWIKI' ) ) {
 }
 
 $wgExtensionCredits['parserhook'][] = array(
+	'path'           => __FILE__,
 	'name'           => 'WEPoll',
 	'version'        => '0.4',
 	'url'            => 'http://WikiEducator.org/Extension:WEPoll',
