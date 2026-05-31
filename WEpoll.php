@@ -22,6 +22,25 @@ $wgExtensionCredits['parserhook'][] = array(
 
 $wgAPIModules['wepoll'] = 'APIWEPoll';
 
+$wgResourceModules['ext.WEpoll'] = array(
+	'scripts'       => array( 'wepoll.js' ),
+	'styles'        => array( 'wepoll.css' ),
+	'dependencies'  => array( 'mediawiki.api', 'mediawiki.api.edit' ),
+	'localBasePath' => __DIR__,
+	'remoteExtPath' => 'WEpoll',
+);
+
+$wgHooks['ParserAfterTidy'][] = 'fnWEpollParserAfterTidy';
+
+function fnWEpollParserAfterTidy( &$parser, &$text ) {
+	if ( strpos( $text, 'WEPoll' ) === false ) {
+		return true;
+	}
+	$parser->getOutput()->addModuleStyles( 'ext.WEpoll' );
+	$parser->getOutput()->addModules( 'ext.WEpoll' );
+	return true;
+}
+
 class APIWEPoll extends ApiQueryBase {
 	public function __construct( $query, $moduleName ) {
 		parent :: __construct( $query, $moduleName, 'po' );
@@ -125,17 +144,37 @@ class APIWEPoll extends ApiQueryBase {
 		return wfGetDB( DB_MASTER );
 	}
 
+	public function encodeParamName( $paramName ) {
+		if ( $paramName === 'token' ) {
+			return $paramName;
+		}
+		return parent::encodeParamName( $paramName );
+	}
+
+
+	public function needsToken() {
+		$params = $this->extractRequestParams();
+		return isset( $params['vote'] ) ? 'csrf' : false;
+	}
+
+	public function getTokenSalt() {
+		$params = $this->extractRequestParams();
+		return isset( $params['vote'] ) ? '' : false;
+	}
+
 	public function getAllowedParams() {
 		return array (
 			'll' => null,
-			'vote' => null
+			'vote' => null,
+			'token' => null
 		);
 	}
 
 	public function getParamDescription() {
 		return array (
 			'll' => 'SHA1 hash of poll question',
-			'vote' => "pairs of question:vote separated by '|'"
+			'vote' => "pairs of question:vote separated by '|'",
+			'token' => 'CSRF edit token'
 		);
 	}
 
