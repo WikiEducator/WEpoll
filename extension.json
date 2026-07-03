@@ -1,0 +1,30 @@
+{
+	"name": "WEPoll",
+	"version": "0.4",
+	"author": [
+		"Jim Tittsler"
+	],
+	"url": "http://WikiEducator.org/Extension:WEPoll",
+	"description": "add API calls for a simple Javascript poll",
+	"license-name": "GPL-2.0",
+	"type": "parserhook",
+	"AutoloadClasses": {
+		"APIWEPoll": "WEpoll.php"
+	},
+	"APIModules": {
+		"wepoll": "APIWEPoll"
+	},
+	"ResourceModules": {
+		"ext.WEpoll": {
+			"scripts": [ "wepoll.js" ],
+			"styles": [ "wepoll.css" ],
+			"dependencies": [ "mediawiki.api", "mediawiki.api.edit" ],
+			"localBasePath": "",
+			"remoteExtPath": "WEpoll"
+		}
+	},
+	"Hooks": {
+		"ParserAfterTidy": "APIWEPoll::onParserAfterTidy"
+	},
+	"manifest_version": 2
+}

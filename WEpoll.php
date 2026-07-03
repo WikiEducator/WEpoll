@@ -11,37 +11,16 @@ if( !defined( 'MEDIAWIKI' ) ) {
 	die( "This file is an extension to the MediaWiki software and cannot be used standalone.\n" );
 }
 
-$wgExtensionCredits['parserhook'][] = array(
-	'path'           => __FILE__,
-	'name'           => 'WEPoll',
-	'version'        => '0.4',
-	'url'            => 'http://WikiEducator.org/Extension:WEPoll',
-	'author'         => '[http://WikiEducator.org/User:JimTittsler Jim Tittsler]',
-        'description'    => 'add API calls for a simple Javascript poll',
-);
-
-$wgAPIModules['wepoll'] = 'APIWEPoll';
-
-$wgResourceModules['ext.WEpoll'] = array(
-	'scripts'       => array( 'wepoll.js' ),
-	'styles'        => array( 'wepoll.css' ),
-	'dependencies'  => array( 'mediawiki.api', 'mediawiki.api.edit' ),
-	'localBasePath' => __DIR__,
-	'remoteExtPath' => 'WEpoll',
-);
-
-$wgHooks['ParserAfterTidy'][] = 'fnWEpollParserAfterTidy';
-
-function fnWEpollParserAfterTidy( &$parser, &$text ) {
-	if ( strpos( $text, 'WEPoll' ) === false ) {
+class APIWEPoll extends ApiQueryBase {
+	public static function onParserAfterTidy( &$parser, &$text ) {
+		if ( strpos( $text, 'WEPoll' ) === false ) {
+			return true;
+		}
+		$parser->getOutput()->addModuleStyles( 'ext.WEpoll' );
+		$parser->getOutput()->addModules( 'ext.WEpoll' );
 		return true;
 	}
-	$parser->getOutput()->addModuleStyles( 'ext.WEpoll' );
-	$parser->getOutput()->addModules( 'ext.WEpoll' );
-	return true;
-}
 
-class APIWEPoll extends ApiQueryBase {
 	public function __construct( $query, $moduleName ) {
 		parent :: __construct( $query, $moduleName, 'po' );
 	}
@@ -52,11 +31,11 @@ class APIWEPoll extends ApiQueryBase {
 		$params = $this->extractRequestParams();
 
 		if (!isset($params['ll'])) {
-			$this->dieUsage('poll argument not supplied',
+			$this->dieWithError(new RawMessage( 'poll argument not supplied' ),
 				'missingpid');
 		}
 		if ( preg_match('/^[0-9a-f]{40}$/', $params['ll']) == 0 ) {
-			$this->dieUsage('bad poll argument',
+			$this->dieWithError(new RawMessage( 'bad poll argument' ),
 				'badpid');
 		}
 
@@ -64,19 +43,19 @@ class APIWEPoll extends ApiQueryBase {
 			// make user the user is logged in
 			//error_log("User ID=$user");
 			if ( $user <= 0 ) {
-				$this->dieUsage('must be logged in to vote',
+				$this->dieWithError( new RawMessage( 'must be logged in to vote' ),
 					'notloggedin');
 			}
 			// make sure the poll exists
 			// remove old votes by this user
-			$dbw = $this->GetDB( DB_MASTER );
+			$dbw = wfGetDB( DB_MASTER );
 			$res = $dbw->delete(
 				'wepoll',   // $table
 				array('po_id' => $params['ll'],
 				      'po_user_id' => $user),
 				__METHOD__);
 			// record this user's vote
-			$dbw = $this->GetDB();
+			$dbw = wfGetDB( DB_MASTER );
 			$votes = explode('|', $params['vote']);
 			foreach ($votes as $vote) {
 				$q = explode(':', $vote);
@@ -138,10 +117,6 @@ class APIWEPoll extends ApiQueryBase {
 
 		$result->setIndexedTagName($data, 'poll');
 		$result->addValue('poll', $this->getModuleName(), $data);
-	}
-
-	protected function getDB() {
-		return wfGetDB( DB_MASTER );
 	}
 
 	public function encodeParamName( $paramName ) {
