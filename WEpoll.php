@@ -3,15 +3,18 @@
 /**
 * @package MediaWiki
 * @subpackage WEPoll
-* @author Jim Tittsler <jim@OERfoundation.org>
-* @licence GPL2
+* @author Jim Tittsler <jimt@oer.me>
+* @licence GPL-2.0-or-later
 */
 
 if( !defined( 'MEDIAWIKI' ) ) {
 	die( "This file is an extension to the MediaWiki software and cannot be used standalone.\n" );
 }
 
-class APIWEPoll extends ApiQueryBase {
+class APIWEPoll extends ApiBase {
+	/** Upper limit on question:vote pairs in one request */
+	const MAX_VOTE_PAIRS = 100;
+
 	public static function onParserAfterTidy( &$parser, &$text ) {
 		if ( strpos( $text, 'WEPoll' ) === false ) {
 			return true;
@@ -21,13 +24,12 @@ class APIWEPoll extends ApiQueryBase {
 		return true;
 	}
 
-	public function __construct( $query, $moduleName ) {
-		parent :: __construct( $query, $moduleName, 'po' );
+	public function __construct( $mainModule, $moduleName ) {
+		parent :: __construct( $mainModule, $moduleName, 'po' );
 	}
 
 	public function execute() {
-		global $wgUser;
-		$user = $wgUser->getId();
+		$user = $this->getUser()->getId();
 		$params = $this->extractRequestParams();
 
 		if (!isset($params['ll'])) {
@@ -46,29 +48,38 @@ class APIWEPoll extends ApiQueryBase {
 				$this->dieWithError( new RawMessage( 'must be logged in to vote' ),
 					'notloggedin');
 			}
-			// make sure the poll exists
-			// remove old votes by this user
+			// parse and check every question:vote pair BEFORE touching
+			// the table, so a malformed request can't delete the user's
+			// existing vote and then fail to record a new one
+			$votes = explode('|', $params['vote']);
+			if ( count( $votes ) > self::MAX_VOTE_PAIRS ) {
+				$this->dieWithError( new RawMessage( 'too many votes' ),
+					'toomanyvotes');
+			}
+			$rows = array();
+			$now = wfTimestampNow();
+			foreach ($votes as $vote) {
+				if ( !preg_match( '/^(\d{1,5}):(\d{1,5})$/', $vote, $m ) ) {
+					$this->dieWithError( new RawMessage( 'bad vote' ),
+						'badvote');
+				}
+				$rows[] = array('po_id' => $params['ll'],
+					'po_q' => (int)$m[1],
+					'po_user_id' => $user,
+					'po_vote' => (int)$m[2],
+					'po_timestamp' => $now
+				);
+			}
+			// replace this user's old votes with the new ones
 			$dbw = wfGetDB( DB_MASTER );
-			$res = $dbw->delete(
+			$dbw->startAtomic( __METHOD__ );
+			$dbw->delete(
 				'wepoll',   // $table
 				array('po_id' => $params['ll'],
 				      'po_user_id' => $user),
 				__METHOD__);
-			// record this user's vote
-			$dbw = wfGetDB( DB_MASTER );
-			$votes = explode('|', $params['vote']);
-			foreach ($votes as $vote) {
-				$q = explode(':', $vote);
-				$res = $dbw->insert(
-					'wepoll',     // $table
-					array('po_id' => $params['ll'],
-						'po_q' => $q[0],
-						'po_user_id' => $user,
-						'po_vote' => $q[1],
-						'po_timestamp' => wfTimestampNow()
-					),      // rows
-					__METHOD__);
-			}
+			$dbw->insert( 'wepoll', $rows, __METHOD__ );
+			$dbw->endAtomic( __METHOD__ );
 			//error_log("vote on {$params['ll']} by $user of {$params['vote']}");
 		}
 		
@@ -76,39 +87,41 @@ class APIWEPoll extends ApiQueryBase {
 		$data = array();
 		$data['poll'] = $params['ll'];
 
-		$this->addTables('wepoll');
-		$this->addFields('po_id');
-		$this->addFields('po_q');
-		$this->addFields('po_vote');
-		$this->addFields('count(*) AS po_count');
+		$dbr = wfGetDB( DB_REPLICA );
 
-		$this->addWhereFld('po_id', $params['ll']);
-		$this->addOption('GROUP BY', 'po_q,po_vote');
-		$this->addOption('ORDER BY', 'po_q,po_vote');
-		$res = $this->select(__METHOD__);
-
+		$res = $dbr->select(
+			'wepoll',
+			array( 'po_id', 'po_q', 'po_vote', 'count(*) AS po_count' ),
+			array( 'po_id' => $params['ll'] ),
+			__METHOD__,
+			array( 'GROUP BY' => 'po_q,po_vote', 'ORDER BY' => 'po_q,po_vote' )
+		);
 		$votes = array();
 		foreach ( $res as $row ) {
 			$votes[] = array($row->po_q, $row->po_vote, $row->po_count);
 		}
 		$data['votes'] = $votes;
 
-		$this->addWhereFld('po_user_id', $user);
-		$res = $this->select(__METHOD__);
+		$res = $dbr->select(
+			'wepoll',
+			array( 'po_id', 'po_q', 'po_vote', 'count(*) AS po_count' ),
+			array( 'po_id' => $params['ll'], 'po_user_id' => $user ),
+			__METHOD__,
+			array( 'GROUP BY' => 'po_q,po_vote', 'ORDER BY' => 'po_q,po_vote' )
+		);
 		$uservote = array();
 		foreach ( $res as $row ) {
 			$uservote[] = array($row->po_q, $row->po_vote);
 		}
 		$data['uservote'] = $uservote;
 
-		$this->resetQueryParams();
-		$this->addTables('wepoll');
-		$this->addFields('po_q');
-		$this->addFields('count(distinct po_user_id) AS voters');
-		$this->addWhereFld('po_id', $params['ll']);
-		$this->addOption('GROUP BY', 'po_q');
-		$this->addOption('ORDER BY', 'po_q');
-		$res = $this->select(__METHOD__);
+		$res = $dbr->select(
+			'wepoll',
+			array( 'po_q', 'count(distinct po_user_id) AS voters' ),
+			array( 'po_id' => $params['ll'] ),
+			__METHOD__,
+			array( 'GROUP BY' => 'po_q', 'ORDER BY' => 'po_q' )
+		);
 		$voters = array();
 		foreach ( $res as $row ) {
 			$voters[] = array($row->po_q, $row->voters);
@@ -128,13 +141,16 @@ class APIWEPoll extends ApiQueryBase {
 
 
 	public function needsToken() {
-		$params = $this->extractRequestParams();
-		return isset( $params['vote'] ) ? 'csrf' : false;
+		return $this->getRequest()->getCheck( $this->encodeParamName( 'vote' ) ) ? 'csrf' : false;
 	}
 
-	public function getTokenSalt() {
-		$params = $this->extractRequestParams();
-		return isset( $params['vote'] ) ? '' : false;
+	/**
+	 * Voting writes to the database, so declare it: the API then refuses
+	 * votes while the wiki is read-only ($wgReadOnly). Reading results
+	 * stays allowed.
+	 */
+	public function isWriteMode() {
+		return $this->getRequest()->getCheck( $this->encodeParamName( 'vote' ) );
 	}
 
 	public function getAllowedParams() {
