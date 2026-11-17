@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXT_DIR="$(dirname "$SCRIPT_DIR")"
 MW_DIR="$(dirname "$(dirname "$EXT_DIR")")" # Points to /var/www/we
 
-PHP="php5.6"
+PHP="php7.4"
 # Configuration
 WIDGET_TITLES=(
     "Widget:Poll"
